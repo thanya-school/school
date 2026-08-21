@@ -5,8 +5,11 @@
   <style>
     body { background:#f0f4ff; font-family:Arial; text-align:center; padding:40px; }
     h1 { color:#0a0f1e; font-size:30px; }
-    input, select { width:300px; padding:12px; font-size:18px; border-radius:10px; border:2px solid #dde4f5; margin:10px 0; text-align:center; }
-    .btn { background:#00c896; color:white; border:none; padding:15px 40px; font-size:20px; border-radius:12px; cursor:pointer; display:block; margin:10px auto; width:300px; }
+    input, select { width:300px; padding:12px; font-size:18px;
+                    border-radius:10px; border:2px solid #dde4f5; margin:10px 0; text-align:center; }
+    .btn { background:#00c896; color:white; border:none; padding:15px 40px;
+           font-size:20px; border-radius:12px; cursor:pointer;
+           display:block; margin:10px auto; width:300px; }
     .btn-red { background:#ef4444; }
     #شاشة_الاختيار { display:none; }
     #شاشة_الانتظار { display:none; }
@@ -14,7 +17,6 @@
 </head>
 <body>
 
-  <!-- شاشة الرقم السري -->
   <div id="شاشة_الرقم">
     <h1>🔐 أهلاً بك</h1>
     <p>أدخل كلمة السر</p>
@@ -23,7 +25,6 @@
     <p id="خطأ" style="color:red;"></p>
   </div>
 
-  <!-- شاشة الاختيار -->
   <div id="شاشة_الاختيار">
     <h1>🚗 وصلت للمدرسة</h1>
     <p>اختر اسم ابنك</p>
@@ -32,7 +33,6 @@
     <p id="رسالة" style="color:#00c896; font-size:18px;"></p>
   </div>
 
-  <!-- شاشة الانتظار -->
   <div id="شاشة_الانتظار">
     <h1>⏳ بانتظار الاستدعاء</h1>
     <p id="اسم_المنتظر"></p>
@@ -52,21 +52,31 @@
       let r = await fetch(URL + '/parents?pin=eq.' + pin, { headers: H });
       let d = await r.json();
 
-      if (d.length === 0) {
+      if (!Array.isArray(d) || d.length === 0) {
         document.getElementById('خطأ').innerText = '❌ كلمة السر غلط!';
-      } else {
-        let list = d[0].students_list.split(',');
-        let select = document.getElementById('اسم_الطالب');
-        select.innerHTML = '';
-        list.forEach(s => {
-          let opt = document.createElement('option');
-          opt.value = s;
-          opt.innerText = s.replace('|', ' — ');
-          select.appendChild(opt);
-        });
-        document.getElementById('شاشة_الرقم').style.display = 'none';
-        document.getElementById('شاشة_الاختيار').style.display = 'block';
+        return;
       }
+
+      // جمع كل الأبناء من جميع السجلات بنفس كلمة السر
+      let allStudents = [];
+      d.forEach(record => {
+        let list = record.students_list.split(',');
+        list.forEach(s => {
+          if (s.trim()) allStudents.push(s.trim());
+        });
+      });
+
+      let select = document.getElementById('اسم_الطالب');
+      select.innerHTML = '';
+      allStudents.forEach(s => {
+        let opt = document.createElement('option');
+        opt.value = s;
+        opt.innerText = s.replace('|', ' — ');
+        select.appendChild(opt);
+      });
+
+      document.getElementById('شاشة_الرقم').style.display = 'none';
+      document.getElementById('شاشة_الاختيار').style.display = 'block';
     });
 
     document.getElementById('sendBtn').addEventListener('click', async function() {
@@ -88,7 +98,8 @@
 
     document.getElementById('cancelBtn').addEventListener('click', async function() {
       if (currentStudentId) {
-        await fetch(URL + '/students?id=eq.' + currentStudentId, { method: 'DELETE', headers: H });
+        await fetch(URL + '/students?id=eq.' + currentStudentId,
+          { method: 'DELETE', headers: H });
       }
       document.getElementById('شاشة_الانتظار').style.display = 'none';
       document.getElementById('شاشة_الاختيار').style.display = 'block';
